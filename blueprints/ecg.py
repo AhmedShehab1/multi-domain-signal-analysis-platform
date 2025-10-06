@@ -81,9 +81,93 @@ def load_ecg_from_file(file):
                             else:
                                 ecg_data = f['tracings'][:]
                 print(f"Loaded ECG data with shape: {ecg_data.shape}")
-        
         # ... rest of the code for other formats ...
-        
+        elif filename.endswith('.csv'):
+            # Read CSV file
+            print("Loading CSV ECG data...")
+            file_content = file.read().decode('utf-8')
+            
+            try:
+                # First attempt: Try assuming it's formatted as time rows × lead columns
+                # With a header row containing lead names
+                import pandas as pd
+                df = pd.read_csv(io.StringIO(file_content))
+                
+                # Check if we have header with lead names
+                lead_names = ['DI', 'DII', 'DIII', 'AVR', 'AVL', 'AVF', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6']
+                alternate_names = ['I', 'II', 'III', 'aVR', 'aVL', 'aVF', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6']
+                
+                # Check if all columns match expected leads
+                if all(lead in df.columns for lead in lead_names):
+                    print("Found standard lead names in CSV headers")
+                    # Reorder columns to match expected order
+                    ecg_data = df[lead_names].values
+                elif all(lead in df.columns for lead in alternate_names):
+                    print("Found alternate lead names in CSV headers")
+                    ecg_data = df[alternate_names].values
+                else:
+                    print("CSV headers don't match expected lead names")
+                    # Assume first 12 columns are the leads in correct order
+                    if len(df.columns) >= 12:
+                        print(f"Using first 12 columns from {len(df.columns)} total")
+                        ecg_data = df.iloc[:, :12].values
+                    else:
+                        # If fewer than 12 columns, check if data is transposed
+                        print(f"Found only {len(df.columns)} columns, checking if data is transposed")
+                        # If first column seems to be labels/timestamps, start from column 1
+                        start_col = 1 if not pd.api.types.is_numeric_dtype(df.iloc[:, 0]) else 0
+                        
+                        if len(df.columns) - start_col < 12:
+                            # Less than 12 data columns - data might be transposed
+                            if df.shape[0] >= 12:
+                                print("Data appears to be transposed (leads as rows)")
+                                # Transpose the dataframe, skipping any non-numeric rows
+                                numeric_rows = df.iloc[:, start_col:].apply(
+                                    lambda x: pd.to_numeric(x, errors='coerce').notna().all(), axis=1
+                                )
+                                if sum(numeric_rows) >= 12:
+                                    # Get only the numeric rows and transpose
+                                    ecg_data = df.loc[numeric_rows].iloc[:12, start_col:].values.T
+                                    print(f"Transposed data to shape {ecg_data.shape}")
+                                else:
+                                    raise ValueError(f"Could not find 12 valid numeric rows for leads")
+                            else:
+                                raise ValueError(f"CSV does not contain enough data for 12 leads")
+                
+                # Validate and report
+                print(f"Loaded CSV ECG data with shape: {ecg_data.shape}")
+                
+                # Check for NaNs
+                if np.isnan(ecg_data).any():
+                    print("Warning: CSV contains NaN values. Replacing with zeros.")
+                    ecg_data = np.nan_to_num(ecg_data)
+                
+                # Make sure it's float data
+                ecg_data = ecg_data.astype(np.float32)
+                
+            except Exception as e:
+                # Fallback method: simple numpy loading
+                print(f"Pandas loading failed: {str(e)}, trying numpy fallback")
+                try:
+                    # Try different CSV formats
+                    try:
+                        # Try with header
+                        ecg_data = np.loadtxt(io.StringIO(file_content), delimiter=',', skiprows=1)
+                    except:
+                        # Try without header
+                        ecg_data = np.loadtxt(io.StringIO(file_content), delimiter=',')
+                    
+                    # Check if data needs to be transposed
+                    if ecg_data.shape[1] < 12 and ecg_data.shape[0] >= 12:
+                        print(f"Transposing data from shape {ecg_data.shape}")
+                        ecg_data = ecg_data[:12, :].T
+                    elif ecg_data.shape[1] > 12:
+                        print(f"Taking first 12 columns from shape {ecg_data.shape}")
+                        ecg_data = ecg_data[:, :12]
+                    
+                    print(f"Loaded CSV data with shape: {ecg_data.shape}")
+                except Exception as inner_e:
+                    raise ValueError(f"Failed to parse CSV file: {str(e)}, then {str(inner_e)}")
     except Exception as e:
         import traceback
         print(f"Error loading ECG file: {str(e)}")
