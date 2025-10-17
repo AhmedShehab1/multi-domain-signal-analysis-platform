@@ -13,6 +13,7 @@ from blueprints.ecg import ecg_bp
 from blueprints.doppler import doppler_bp
 from blueprints.eeg import eeg_bp, setup_task_cleanup
 
+from blueprints.resample import resample_bp
 def create_app():
     """Create and configure the Flask application"""
     app = Flask(__name__)
@@ -40,6 +41,7 @@ def create_app():
     app.register_blueprint(ecg_bp, url_prefix='/api/ecg')
     app.register_blueprint(doppler_bp, url_prefix='/api/doppler')
     app.register_blueprint(eeg_bp, url_prefix='/api/eeg')
+    app.register_blueprint(resample_bp, url_prefix='/api/resample')
     
     # Call setup functions
     setup_task_cleanup()
@@ -55,6 +57,10 @@ def create_app():
     def ecg_frontend():
         """ECG classification frontend"""
         return render_template('ecg_classifier.html')
+
+    @app.route('/resample_audio')
+    def resample():
+        return render_template('resample_audio.html')
     
     # API documentation route
     @app.route('/api')
