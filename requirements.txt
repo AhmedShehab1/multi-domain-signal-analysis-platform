@@ -1,3 +1,4 @@
+# Core dependencies
 einops==0.4.0
 matplotlib==3.7.0
 numpy==1.23.5
@@ -12,3 +13,26 @@ torch~=2.0.0
 tqdm==4.64.1
 natsort~=8.4.0
 h5py>=3.1.0
+
+# Flask web framework
+Flask>=2.3.0
+Flask-CORS>=4.0.0
+
+# Audio processing
+soundfile>=0.12.1
+samplerate>=0.1.0
+librosa>=0.10.0
+
+# TensorFlow for ECG model
+tensorflow>=2.13.0
+keras>=2.13.0
+
+# Additional utilities
+Werkzeug>=2.3.0
+Pillow>=10.0.0
+
+# Optional: For better audio format support
+pydub>=0.25.1
+
+# Optional: For ffmpeg wrapper (if using subprocess fallback)
+# ffmpeg-python>=0.2.0
