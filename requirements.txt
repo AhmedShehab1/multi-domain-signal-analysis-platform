@@ -22,10 +22,15 @@ Flask-CORS>=4.0.0
 soundfile>=0.12.1
 samplerate>=0.1.0
 librosa>=0.10.0
+torchaudio>=2.0.0
+safetensors>=0.4.0
 
 # TensorFlow for ECG model
 tensorflow>=2.13.0
 keras>=2.13.0
+
+# Voice gender model
+huggingface_hub>=0.17.0
 
 # Additional utilities
 Werkzeug>=2.3.0
