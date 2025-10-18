@@ -12,8 +12,10 @@ import os
 from blueprints.ecg import ecg_bp
 from blueprints.doppler import doppler_bp
 from blueprints.eeg import eeg_bp, setup_task_cleanup
-
+from blueprints.ecg_aliasing import ecg_aliasing_bp
 from blueprints.resample import resample_bp
+from blueprints.voice_gender import voice_gender_bp  # Add this line
+
 def create_app():
     """Create and configure the Flask application"""
     app = Flask(__name__)
@@ -23,7 +25,7 @@ def create_app():
     # Set file upload limits
     app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500 MB max upload
     app.config['MAX_FORM_MEMORY_SIZE'] = 500 * 1024 * 1024
-    app.config['UPLOAD_EXTENSIONS'] = ['.edf', '.csv', '.txt', '.set', '.hdf5', '.h5', '.npy']
+    app.config['UPLOAD_EXTENSIONS'] = ['.edf', '.csv', '.txt', '.set', '.hdf5', '.h5', '.npy', '.wav', '.mp3', '.flac', '.ogg']  # Added audio formats
     app.config['UPLOAD_PATH'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tmp')
     os.makedirs(app.config['UPLOAD_PATH'], exist_ok=True)
     
@@ -42,6 +44,8 @@ def create_app():
     app.register_blueprint(doppler_bp, url_prefix='/api/doppler')
     app.register_blueprint(eeg_bp, url_prefix='/api/eeg')
     app.register_blueprint(resample_bp, url_prefix='/api/resample')
+    app.register_blueprint(ecg_aliasing_bp, url_prefix='/api/ecg_aliasing')
+    app.register_blueprint(voice_gender_bp, url_prefix='/api/voice_gender')  # Add this line
     
     # Call setup functions
     setup_task_cleanup()
@@ -57,10 +61,20 @@ def create_app():
     def ecg_frontend():
         """ECG classification frontend"""
         return render_template('ecg_classifier.html')
-
+    
+    @app.route('/ecg_aliasing')
+    def ecg_aliasing_page():
+        """ECG aliasing test frontend"""
+        return render_template('ecg_aliasing.html')
+    
     @app.route('/resample_audio')
     def resample():
         return render_template('resample_audio.html')
+    
+    @app.route('/voice_gender')
+    def voice_gender_page():
+        """Voice gender classification frontend"""
+        return render_template('voice_gender.html')
     
     # API documentation route
     @app.route('/api')
@@ -77,7 +91,16 @@ def create_app():
                 '/api/doppler/info': 'GET - Doppler API information',
                 '/api/eeg/classify': 'POST - Upload and classify EEG recordings',
                 '/api/eeg/stream/<task_id>': 'GET - Stream EEG classification progress',
-                '/api/eeg/results/<task_id>': 'GET - Get EEG classification results'
+                '/api/eeg/results/<task_id>': 'GET - Get EEG classification results',
+                '/api/resample/estimate_fmax': 'POST - Estimate maximum frequency of audio',
+                '/api/resample/resample': 'POST - Resample audio with anti-aliasing',
+                '/api/ecg_aliasing/generate/3ch': 'GET - Generate 3-channel synthetic ECG',
+                '/api/ecg_aliasing/generate/12ch': 'GET - Generate 12-channel synthetic ECG',
+                '/api/ecg_aliasing/analyze': 'POST - Analyze ECG and estimate Fmax',
+                '/api/ecg_aliasing/resample': 'POST - Resample ECG (safe/demo modes)',
+                '/api/voice_gender/classify': 'POST - Classify gender from voice recording',
+                '/api/voice_gender/info': 'GET - Voice gender model information',
+                '/api/voice_gender/health': 'GET - Voice gender model health'
             }
         }
     
